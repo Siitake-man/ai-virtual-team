@@ -1,6 +1,6 @@
 import os
 import requests
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Any, Optional, Union
 
 # API Server URL
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
