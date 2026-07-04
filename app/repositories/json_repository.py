@@ -3,12 +3,20 @@ import json
 from typing import List, Optional
 from app.models.schemas import Project
 
+
 class JsonRepository:
     """
     JSONファイルを用いてプロジェクトデータを保存・取得するリポジトリ。
     各プロジェクトは {project_id}.json というファイル名で data_dir 配下に保存される。
     """
-    def __init__(self, data_dir: str = "./data/projects"):
+
+    def __init__(self, data_dir: str = "./data/projects") -> None:
+        """
+        JsonRepositoryを初期化します。
+
+        Args:
+            data_dir (str): JSONファイルを保存するディレクトリパス
+        """
         self.data_dir = data_dir
         os.makedirs(self.data_dir, exist_ok=True)
 
@@ -18,11 +26,16 @@ class JsonRepository:
         return os.path.join(self.data_dir, f"{safe_id}.json")
 
     def list_projects(self) -> List[Project]:
-        """保存されているすべてのプロジェクトを一覧取得する"""
-        projects = []
+        """
+        保存されているすべてのプロジェクトを一覧取得します。
+
+        Returns:
+            List[Project]: プロジェクトのリスト
+        """
+        projects: List[Project] = []
         if not os.path.exists(self.data_dir):
             return projects
-            
+
         for filename in os.listdir(self.data_dir):
             if filename.endswith(".json"):
                 filepath = os.path.join(self.data_dir, filename)
@@ -35,7 +48,15 @@ class JsonRepository:
         return projects
 
     def get_project(self, project_id: str) -> Optional[Project]:
-        """指定したIDのプロジェクトを取得する。存在しない場合は None を返す"""
+        """
+        指定したIDのプロジェクトを取得します。存在しない場合は None を返します。
+
+        Args:
+            project_id (str): 取得するプロジェクトのID
+
+        Returns:
+            Optional[Project]: 見つかったプロジェクト、またはNone
+        """
         filepath = self._get_filepath(project_id)
         if not os.path.exists(filepath):
             return None
@@ -48,7 +69,18 @@ class JsonRepository:
             return None
 
     def save_project(self, project: Project) -> Project:
-        """プロジェクトデータをJSONファイルに新規保存または上書き保存する"""
+        """
+        プロジェクトデータをJSONファイルに新規保存または上書き保存します。
+
+        Args:
+            project (Project): 保存するプロジェクト
+
+        Returns:
+            Project: 保存されたプロジェクト
+
+        Raises:
+            Exception: 保存処理に失敗した場合
+        """
         filepath = self._get_filepath(project.id)
         # Pydantic v2 の model_dump を使用
         data = project.model_dump()
@@ -61,7 +93,15 @@ class JsonRepository:
             raise e
 
     def delete_project(self, project_id: str) -> bool:
-        """指定したIDのプロジェクトファイルを削除する。成功した場合は True を返す"""
+        """
+        指定したIDのプロジェクトファイルを削除します。成功した場合は True を返します。
+
+        Args:
+            project_id (str): 削除するプロジェクトのID
+
+        Returns:
+            bool: 削除が成功した場合はTrue、それ以外はFalse
+        """
         filepath = self._get_filepath(project_id)
         if os.path.exists(filepath):
             try:

@@ -4,20 +4,46 @@ from google import genai
 from google.genai import types
 from app.models.schemas import Project, Employee, ChatMessage
 
+
 class LLMService:
     """
     Gemini APIへの接続とチャット応答の生成を行うサービス。
     """
+
     @staticmethod
     def get_client() -> genai.Client:
+        """
+        Gemini APIのクライアントを初期化して取得します。
+
+        Returns:
+            genai.Client: 初期化されたGemini APIクライアント
+
+        Raises:
+            ValueError: 環境変数に GEMINI_API_KEY が設定されていない場合
+        """
         # python-dotenvによりロードされた環境変数からAPIキーを取得
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            raise ValueError("GEMINI_API_KEY が環境変数に設定されていません。.env ファイルを確認してください。")
+            raise ValueError(
+                "GEMINI_API_KEY が環境変数に設定されていません。.env ファイルを確認してください。"
+            )
         return genai.Client(api_key=api_key)
 
     @classmethod
-    def generate_chat_response(cls, project: Project, employee: Employee, messages: List[ChatMessage]) -> str:
+    def generate_chat_response(
+        cls, project: Project, employee: Employee, messages: List[ChatMessage]
+    ) -> str:
+        """
+        従業員の個性やプロジェクト情報を元に、Gemini APIを使用してチャット応答を生成します。
+
+        Args:
+            project (Project): 従業員が所属するプロジェクト情報
+            employee (Employee): 回答する仮想従業員情報
+            messages (List[ChatMessage]): 過去の会話履歴
+
+        Returns:
+            str: 生成された応答テキスト
+        """
         # 1. システムプロンプト（インストラクション）の構築
         # 従業員の個別人格設定と、プロジェクトの共通オーナー設定を統合する
         owner_ctx = project.owner_context
@@ -45,22 +71,23 @@ class LLMService:
 """
 
         # 2. 会話履歴の変換 (google-genai SDK 形式)
-        contents = []
+        contents: List[types.Content] = []
         for msg in messages:
             role = "user" if msg.role == "user" else "model"
             contents.append(
-                types.Content(
-                    role=role,
-                    parts=[types.Part.from_text(text=msg.content)]
-                )
+                types.Content(role=role, parts=[types.Part.from_text(text=msg.content)])
             )
 
         # 3. 使用モデルの決定
-        model_name = employee.llm_model or os.getenv("DEFAULT_LLM_MODEL", "gemini-2.0-flash")
-        
+        model_name = employee.llm_model or os.getenv(
+            "DEFAULT_LLM_MODEL", "gemini-2.0-flash"
+        )
+
         # Phase 1時点ではGeminiモデルのみを完全サポートとするため、他モデル指定時はフォールバック
         if "gemini" not in model_name.lower():
-            print(f"Warning: Model '{model_name}' is not fully supported in Phase 1. Falling back to gemini-2.0-flash.")
+            print(
+                f"Warning: Model '{model_name}' is not fully supported in Phase 1. Falling back to gemini-2.0-flash."
+            )
             model_name = "gemini-2.0-flash"
 
         # 4. API呼び出し実行
@@ -68,13 +95,13 @@ class LLMService:
         try:
             response = client.models.generate_content(
                 model=model_name,
-                contents=contents,
+                contents=contents,  # type: ignore
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
                     temperature=0.7,
-                )
+                ),
             )
-            return response.text
+            return response.text or ""
         except Exception as e:
             print(f"Gemini API Error: {e}")
             raise e
