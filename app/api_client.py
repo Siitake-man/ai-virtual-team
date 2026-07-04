@@ -57,7 +57,7 @@ class APIClient:
     @classmethod
     def get_project(
         cls, project_id: str
-    ) -> Optional[Dict[str, Union[str, list, dict, bool]]]:
+    ) -> Optional[Dict[str, Any]]:
         """
         プロジェクトの詳細情報を取得します。
 
